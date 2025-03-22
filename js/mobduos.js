@@ -1,0 +1,1 @@
+(function(){chrome.runtime.onMessage.addListener((function(n,o,e){"LOGIN_OUT_REFRESH_PAGE"==n.cmd&&(window.location.href=window.location.href),e("")}))})();

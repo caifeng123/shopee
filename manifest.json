@@ -1,0 +1,111 @@
+{
+    "name": "知虾选品助手-Shopee虾皮大数据分析插件",
+    "description": "知虾选品助手是Shopee虾皮网页版大数据分析插件，实时查看搜索产品数据，掌握市场最新动态，支持Shopee九大站点，为虾皮卖家提供“选品+运营”一站式数据服务，助力高效运营。",
+    "version": "1.20.0",
+    "manifest_version": 3,
+    "icons": {
+        "16": "img/logo16.png",
+        "48": "img/logo48.png",
+        "128": "img/logo.png"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": "img/logo.png",
+        "default_title": "知虾选品助手"
+    },
+    "background": {
+        "service_worker": "js/background.js"
+    },
+    "content_scripts": [
+        {
+            "js": [
+                "js/injected.js",
+                "js/utils.js",
+                "js/popup.js",
+                "js/content.js",
+                "js/detail.js",
+                "js/selectTabs.js",
+                "js/analysisPanel.js",
+                "js/dataPanel.js",
+                "js/sameKindLayer.js"
+            ],
+            "css": [
+                "css/detail.css",
+                "css/content.css",
+                "css/popup.css",
+                "css/selectTabs.css",
+                "css/analysisPanel.css",
+                "css/dataPanel.css",
+                "css/sameKindLayer.css"
+            ],
+            "matches": [
+                "*://*.xiapibuy.com/*",
+                "*://shopee.tw/*",
+                "*://shopee.com.my/*",
+                "*://shopee.co.id/*",
+                "*://shopee.co.th/*",
+                "*://shopee.ph/*",
+                "*://shopee.sg/*",
+                "*://shopee.vn/*",
+                "*://shopee.com.br/*",
+                "*://shopee.com.mx/*",
+                "*://detail.1688.com/*"
+            ],
+            "run_at": "document_start"
+        },
+        {
+            "js": [
+                "js/mobduos.js"
+            ],
+            "matches": [
+                "*://shopee.mobduos.com/*",
+                "*://shopee.menglar.com/*"
+            ],
+            "run_at": "document_start"
+        }
+    ],
+    "externally_connectable": {
+        "matches": [
+            "*://*.xiapibuy.com/*",
+            "*://shopee.tw/*",
+            "*://shopee.com.my/*",
+            "*://shopee.co.id/*",
+            "*://shopee.co.th/*",
+            "*://shopee.ph/*",
+            "*://shopee.sg/*",
+            "*://shopee.vn/*",
+            "*://shopee.com.br/*",
+            "*://shopee.com.mx/*",
+            "*://detail.1688.com/*"
+        ]
+    },
+    "web_accessible_resources": [{
+        "resources": [
+            "js/injected.js",
+            "js/detail.js", 
+            "js/comment.js"
+        ],
+        "matches": [
+            "*://*.xiapibuy.com/*",
+            "*://shopee.tw/*",
+            "*://shopee.com.my/*",
+            "*://shopee.co.id/*",
+            "*://shopee.co.th/*",
+            "*://shopee.ph/*",
+            "*://shopee.sg/*",
+            "*://shopee.vn/*",
+            "*://shopee.com.br/*",
+            "*://shopee.com.mx/*",
+            "*://detail.1688.com/*"
+        ]
+    }],
+    "permissions": [
+        "cookies",
+        "storage",
+        "activeTab",
+        "tabs"
+    ],
+    "host_permissions": [
+        "*://*/*"
+    ]
+}
