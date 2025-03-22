@@ -1,6 +1,6 @@
 {
-    "name": "知虾选品助手-Shopee虾皮大数据分析插件",
-    "description": "知虾选品助手是Shopee虾皮网页版大数据分析插件，实时查看搜索产品数据，掌握市场最新动态，支持Shopee九大站点，为虾皮卖家提供“选品+运营”一站式数据服务，助力高效运营。",
+    "name": "hack知虾选品助手",
+    "description": "hack知虾选品助手",
     "version": "1.20.0",
     "manifest_version": 3,
     "icons": {
@@ -27,7 +27,9 @@
                 "js/selectTabs.js",
                 "js/analysisPanel.js",
                 "js/dataPanel.js",
-                "js/sameKindLayer.js"
+                "js/sameKindLayer.js",
+                "hack/chromeruntime.js",
+                "hack/content.js"
             ],
             "css": [
                 "css/detail.css",
@@ -103,7 +105,9 @@
         "cookies",
         "storage",
         "activeTab",
-        "tabs"
+        "tabs",
+        "webRequest",
+        "scripting"
     ],
     "host_permissions": [
         "*://*/*"

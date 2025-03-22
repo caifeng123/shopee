@@ -158,7 +158,7 @@ function handler(url, resultData) {
             handler: this.getList
         },
         {
-            rule: /^.*\/api\/v[0-9].*?\/recommend\/recommend\?bundle=.*&limit=.*?/,
+            rule: /^.*\/api\/v[0-9].*?\/recommend\/recommend_v2/,
             handler: this.getHdList
         },
         {
