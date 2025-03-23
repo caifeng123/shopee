@@ -2,6 +2,39 @@
 const zhixiaStorageKey = `zhixia_${getChinaDate()}`;
 const shopeeStorageKey = `shopee_${getChinaDate()}`;
 
+const siteConfig = {
+  TW: {
+    siteName: "台湾",
+    host: "xiapi.xiapibuy.com",
+  },
+  MALAYSIA: {
+    siteName: "马来西亚",
+    host: "my.xiapibuy.com",
+  },
+  SINGAPORE: {
+    siteName: "新加坡",
+    host: "sg.xiapibuy.com",
+  },
+  PH: {
+    siteName: "菲律宾",
+    host: "ph.xiapibuy.com",
+  },
+  VN: {
+    siteName: "越南",
+    host: "vn.xiapibuy.com",
+  },
+  TH: {
+    siteName: "泰国",
+    host: "th.xiapibuy.com",
+  }
+};
+
+
+function getSiteNameByHost(host) {
+  const site = Object.values(siteConfig).find((s) => host === s.host);
+  return site ? site.siteName : "未知";
+}
+
 // content.js 接收popup操作消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FROM_POPUP") {
@@ -95,6 +128,10 @@ window.addEventListener(
 
 // 将数组转换为 CSV 格式
 function convertToCSV(zhixiaData, shopeeData) {
+
+  const firstCategory = document.querySelector(".shopee-category-list .shopee-category-list__main-category__link")?.innerText || '';
+  const secondCategory = document.querySelector(".shopee-category-list .shopee-category-list__sub-category--active")?.innerText || '';
+
   const shopeeDataMap = shopeeData.reduce((acc, item) => {
     acc[item.itemid] = {
       shopeeSold: item.sold,
@@ -135,6 +172,9 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["likeCount", "点赞数"],
     ["ratingNum", "评论数"],
     ["ratingStar", "商品评分"],
+    ["firstCategory", "一级类目"],
+    ["secondCategory", "二级类目"],
+    ["siteName", "站点"]
   ];
   const headers = fieldMapping.map((f) => f[1]);
   // 创建 CSV 内容
@@ -147,6 +187,12 @@ function convertToCSV(zhixiaData, shopeeData) {
             return item[field]?.replace(/[￥~]/g, "") || "";
           case "sales30Rate":
             return `${item[field]}%`;
+          case "firstCategory":
+            return firstCategory;
+          case "secondCategory":
+            return secondCategory;
+          case "siteName":
+            return getSiteNameByHost(url.host);
           default:
             return item[field] ?? "";
         }
