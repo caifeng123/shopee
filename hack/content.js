@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 将数据转换为 CSV 格式
         const csvContent = convertToCSV(parsedZhixiaData, parsedShopeeData);
         // 创建下载链接
-        const blob = new Blob([csvContent], {
+        const blob = new Blob(["\uFEFF" + csvContent], {
           type: "text/csv;charset=utf-8;",
         });
         const link = document.createElement("a");
@@ -100,11 +100,14 @@ function convertToCSV(zhixiaData, shopeeData) {
       shopeeSold: item.sold,
       shopeeHistoricalSold: item.historical_sold,
       shopeeLocation: item.shop_location,
+      itemName: item.itemName,
       realPrice: item.price,
+      createTime: item.ctime,
     };
     return acc;
   }, {});
   const arr = zhixiaData.map((item) => {
+    // 优先使用shopee数据
     return {
       ...item,
       ...shopeeDataMap[item.itemId],
@@ -156,8 +159,8 @@ function convertToCSV(zhixiaData, shopeeData) {
 }
 
 // 获取当前中国日期
-function getChinaDate() {
-  return new Date()
+function getChinaDate(time = Date.now()) {
+  return new Date(time)
     .toLocaleDateString("zh-CN", {
       timeZone: "Asia/Shanghai",
       year: "numeric",
@@ -299,15 +302,42 @@ function shopeeGetList(resultData) {
   if (list.length == 0) {
     return;
   }
-  const data = list.map(({ item_data }) => {
-    const { sold, historical_sold, shop_location, itemid, price } = item_data;
-    return {
-      sold,
-      historical_sold,
-      shop_location,
-      itemid,
-      price,
-    };
+  const data = list.map((item) => {
+    const { item_basic, item_data, item_card_displayed_asset } = item;
+    // 直接搜索
+    if (item_basic) {
+      const {
+        sold,
+        historical_sold,
+        shop_location,
+        itemid,
+        price,
+        ctime,
+        name,
+      } = item_basic;
+      return {
+        sold,
+        historical_sold,
+        shop_location,
+        itemid,
+        price: price / 100000,
+        itemName: name,
+        ctime: getChinaDate(ctime * 1000),
+      };
+    }
+    // 推荐-最热销
+    if (item_data) {
+      const { itemid, item_card_display_price, ctime } = item_data;
+      return {
+        sold: "-",
+        historical_sold: "-",
+        shop_location: item_card_displayed_asset.shop_location,
+        itemid,
+        price: item_card_display_price.price / 100000,
+        itemName: item_card_displayed_asset.name,
+        ctime: getChinaDate(ctime * 1000),
+      };
+    }
   });
   storeShopeeData(data);
 }
