@@ -30,9 +30,23 @@ const siteConfig = {
 };
 
 
+// 根据网页 host 获取站点名称 
 function getSiteNameByHost(host) {
   const site = Object.values(siteConfig).find((s) => host === s.host);
   return site ? site.siteName : "未知";
+}
+
+// 根据获取商品链接
+function getProductUrl({
+  itemId,
+  shopId,
+  itemName
+}) {
+  if (!itemId || !shopId || !itemName) {
+    return undefined;
+  }
+
+  return `https://${location.href}/${itemName}-i.${shopId}.${itemId}`
 }
 
 // content.js 接收popup操作消息
@@ -43,6 +57,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.payload.action === "download_csv") {
       const zhixiaData = localStorage.getItem(zhixiaStorageKey) || "[]";
       const shopeeData = localStorage.getItem(shopeeStorageKey) || "[]";
+      debugger
 
       const parsedZhixiaData = JSON.parse(zhixiaData) || [];
       const parsedShopeeData = JSON.parse(shopeeData) || [];
@@ -129,7 +144,6 @@ window.addEventListener(
 // 将数组转换为 CSV 格式
 function convertToCSV(zhixiaData, shopeeData) {
 
-  debugger
   const firstCategory = document.querySelector(".shopee-category-list .shopee-category-list__main-category__link")?.innerText || '';
   const secondCategory = document.querySelector(".shopee-category-list .shopee-category-list__sub-category--active")?.innerText || '';
 
@@ -141,6 +155,7 @@ function convertToCSV(zhixiaData, shopeeData) {
       itemName: item.itemName,
       realPrice: item.price,
       createTime: item.ctime,
+      product_url: item.product_url,
     };
     return acc;
   }, {});
@@ -173,9 +188,10 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["likeCount", "点赞数"],
     ["ratingNum", "评论数"],
     ["ratingStar", "商品评分"],
+    ["product_url", "商品链接"],
     ["firstCategory", "一级类目"],
     ["secondCategory", "二级类目"],
-    ["siteName", "站点"]
+    ["siteName", "站点"],
   ];
   const headers = fieldMapping.map((f) => f[1]);
   // 创建 CSV 内容
@@ -395,22 +411,35 @@ function shopeeGetHdList(resultData) {
   if (list.length == 0) {
     return;
   }
+  
   const data = list.map(({ item }) => {
-    const { item_data } = item;
+    
+    const { item_data, item_card_displayed_asset } = item;
     const sold = item_data.item_card_display_sold_count.monthly_sold_count;
     const historical_sold =
       item_data.item_card_display_sold_count.historical_sold_count;
     const shop_location = item_data.shop_data.shop_location;
     const itemid = item_data.item_card_display_price.item_id;
     const price = item_data.item_card_display_price.price;
+    const product_url = getProductUrl({
+      itemId: itemid,
+      shopId: item_data?.shopid,
+      itemName: item_card_displayed_asset?.name,
+    });
+    
+    if(!product_url) {
+      debugger
+    }
     return {
       sold,
       historical_sold,
       shop_location,
       itemid,
       price,
+      product_url,
     };
   });
+  debugger;
   storeShopeeData(data);
 }
 
