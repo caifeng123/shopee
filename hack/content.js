@@ -57,7 +57,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.payload.action === "download_csv") {
       const zhixiaData = localStorage.getItem(zhixiaStorageKey) || "[]";
       const shopeeData = localStorage.getItem(shopeeStorageKey) || "[]";
-      debugger
 
       const parsedZhixiaData = JSON.parse(zhixiaData) || [];
       const parsedShopeeData = JSON.parse(shopeeData) || [];
@@ -427,9 +426,6 @@ function shopeeGetHdList(resultData) {
       itemName: item_card_displayed_asset?.name,
     });
     
-    if(!product_url) {
-      debugger
-    }
     return {
       sold,
       historical_sold,
@@ -439,7 +435,6 @@ function shopeeGetHdList(resultData) {
       product_url,
     };
   });
-  debugger;
   storeShopeeData(data);
 }
 
