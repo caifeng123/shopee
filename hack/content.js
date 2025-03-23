@@ -129,6 +129,7 @@ window.addEventListener(
 // 将数组转换为 CSV 格式
 function convertToCSV(zhixiaData, shopeeData) {
 
+  debugger
   const firstCategory = document.querySelector(".shopee-category-list .shopee-category-list__main-category__link")?.innerText || '';
   const secondCategory = document.querySelector(".shopee-category-list .shopee-category-list__sub-category--active")?.innerText || '';
 
@@ -192,7 +193,7 @@ function convertToCSV(zhixiaData, shopeeData) {
           case "secondCategory":
             return secondCategory;
           case "siteName":
-            return getSiteNameByHost(url.host);
+            return getSiteNameByHost(location.host);
           default:
             return item[field] ?? "";
         }
