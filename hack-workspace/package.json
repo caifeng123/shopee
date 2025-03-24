@@ -1,0 +1,20 @@
+{
+  "name": "hack-workspace",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "watch": "vite build --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Shopee Helper Chrome Extension",
+  "devDependencies": {
+    "@types/chrome": "^0.0.263",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.6"
+  }
+}
