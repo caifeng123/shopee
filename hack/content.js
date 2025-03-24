@@ -145,6 +145,8 @@ function convertToCSV(zhixiaData, shopeeData) {
 
   const firstCategory = document.querySelector(".shopee-category-list .shopee-category-list__main-category__link")?.innerText || '';
   const secondCategory = document.querySelector(".shopee-category-list .shopee-category-list__sub-category--active")?.innerText || '';
+  const keyword = document.querySelector('.shopee-searchbar-input input')?.value || '';
+
 
   const shopeeDataMap = shopeeData.reduce((acc, item) => {
     acc[item.itemid] = {
@@ -187,9 +189,8 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["likeCount", "点赞数"],
     ["ratingNum", "评论数"],
     ["ratingStar", "商品评分"],
-    ["product_url", "商品链接"],
     ["firstCategory", "一级类目"],
-    ["secondCategory", "二级类目"],
+    ["keyword", "关键词"],
     ["siteName", "站点"],
   ];
   const headers = fieldMapping.map((f) => f[1]);
@@ -205,8 +206,8 @@ function convertToCSV(zhixiaData, shopeeData) {
             return `${item[field]}%`;
           case "firstCategory":
             return firstCategory;
-          case "secondCategory":
-            return secondCategory;
+          case "keyword":
+            return keyword;
           case "siteName":
             return getSiteNameByHost(location.host);
           default:
