@@ -1,34 +1,10 @@
 // @ts-nocheck 迁移，后续再打开
+import { siteConfig } from "./config";
 // 获取当天的存储键名
 const zhixiaStorageKey = `zhixia_${getChinaDate()}`;
 const shopeeStorageKey = `shopee_${getChinaDate()}`;
 
-const siteConfig = {
-  TW: {
-    siteName: "台湾",
-    host: "xiapi.xiapibuy.com",
-  },
-  MALAYSIA: {
-    siteName: "马来西亚",
-    host: "my.xiapibuy.com",
-  },
-  SINGAPORE: {
-    siteName: "新加坡",
-    host: "sg.xiapibuy.com",
-  },
-  PH: {
-    siteName: "菲律宾",
-    host: "ph.xiapibuy.com",
-  },
-  VN: {
-    siteName: "越南",
-    host: "vn.xiapibuy.com",
-  },
-  TH: {
-    siteName: "泰国",
-    host: "th.xiapibuy.com",
-  }
-};
+
 
 
 // 根据网页 host 获取站点名称 
