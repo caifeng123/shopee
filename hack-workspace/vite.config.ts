@@ -1,8 +1,11 @@
+/// <reference types="node" />
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
   build: {
+    sourcemap: 'inline',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         content: resolve(__dirname, 'src/content.ts'),
