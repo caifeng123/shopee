@@ -1,27 +1,54 @@
 // @ts-nocheck 迁移，后续再打开
-import { siteConfig } from "./config";
+// 获取当天的存储键名
 // 获取当天的存储键名
 const zhixiaStorageKey = `zhixia_${getChinaDate()}`;
 const shopeeStorageKey = `shopee_${getChinaDate()}`;
 
+const SiteConfig = {
+  TW: {
+    siteName: "台湾",
+    host: "xiapi.xiapibuy.com",
+    imgBase: "https://down-tw.img.susercontent.com/file",
+  },
+  MALAYSIA: {
+    siteName: "马来西亚",
+    host: "my.xiapibuy.com",
+    imgBase: "https://down-my.img.susercontent.com/file",
+  },
+  SINGAPORE: {
+    siteName: "新加坡",
+    host: "sg.xiapibuy.com",
+    imgBase: "https://down-sg.img.susercontent.com/file",
+  },
+  PH: {
+    siteName: "菲律宾",
+    host: "ph.xiapibuy.com",
+    imgBase: "https://down-ph.img.susercontent.com/file",
+  },
+  VN: {
+    siteName: "越南",
+    host: "vn.xiapibuy.com",
+    imgBase: "https://down-vn.img.susercontent.com/file",
+  },
+  TH: {
+    siteName: "泰国",
+    host: "th.xiapibuy.com",
+    imgBase: "https://down-th.img.susercontent.com/file",
+  },
+};
 
-// 根据网页 host 获取站点名称 
-function getSiteNameByHost(host) {
-  const site = Object.values(siteConfig).find((s) => host === s.host);
-  return site ? site.siteName : "未知";
+// 根据网页 host 获取站点名称
+function getSiteInfoByHost(host) {
+  return Object.values(SiteConfig).find((s) => host === s.host) || {};
 }
 
 // 根据获取商品链接
-function getProductUrl({
-  itemId,
-  shopId,
-  itemName
-}) {
+function getProductUrl({ itemId, shopId, itemName }) {
   if (!itemId || !shopId || !itemName) {
     return undefined;
   }
 
-  return `https://${location.host}/${itemName}-i.${shopId}.${itemId}`
+  return `https://${location.host}/${itemName}-i.${shopId}.${itemId}`;
 }
 
 // content.js 接收popup操作消息
@@ -117,22 +144,17 @@ window.addEventListener(
 
 // 将数组转换为 CSV 格式
 function convertToCSV(zhixiaData, shopeeData) {
-
-  const firstCategory = document.querySelector(".shopee-category-list .shopee-category-list__main-category__link")?.innerText || '';
-  const secondCategory = document.querySelector(".shopee-category-list .shopee-category-list__sub-category--active")?.innerText || '';
-  const keyword = document.querySelector('.shopee-searchbar-input input')?.value || '';
-
+  const firstCategory =
+    document.querySelector(
+      ".shopee-category-list .shopee-category-list__main-category__link"
+    )?.innerText || "";
+  const secondCategory =
+    document.querySelector(
+      ".shopee-category-list .shopee-category-list__sub-category--active"
+    )?.innerText || "";
 
   const shopeeDataMap = shopeeData.reduce((acc, item) => {
-    acc[item.itemid] = {
-      shopeeSold: item.sold,
-      shopeeHistoricalSold: item.historical_sold,
-      shopeeLocation: item.shop_location,
-      itemName: item.itemName,
-      realPrice: item.price,
-      createTime: item.ctime,
-      product_url: item.product_url,
-    };
+    acc[item.itemid] = item;
     return acc;
   }, {});
   const arr = zhixiaData.map((item) => {
@@ -140,6 +162,8 @@ function convertToCSV(zhixiaData, shopeeData) {
     return {
       ...item,
       ...shopeeDataMap[item.itemId],
+      firstCategory,
+      secondCategory,
     };
   });
 
@@ -149,14 +173,14 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["itemId", "商品ID"],
     ["product_url", "商品链接/名称"],
     ["catName", "类目路径"],
-    ["createTime", "上架时间"],
+    ["ctime", "上架时间"],
     ["sold", "总销量"],
     ["sales", "近1天销量"],
     ["sales7Day", "近7天销量"],
     ["sales30Day", "近30天销量"],
     ["gmv30Day", "近30天销售额"],
     ["sales30Rate", "近30天销量增长率"],
-    ["realPrice", "实际价格(shopee)"],
+    ["price", "实际价格(shopee)"],
     ["shopeeSold", "最近30天销量(shopee)"],
     ["shopeeHistoricalSold", "历史销量(shopee)"],
     ["shopeeLocation", "店铺位置(shopee)"],
@@ -168,6 +192,7 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["keyword", "关键词"],
     ["siteName", "站点"],
     ["secondCategory", "二级类目"],
+    ["type", "信息来源"]
   ];
   const headers = fieldMapping.map((f) => f[1]);
   // 创建 CSV 内容
@@ -180,12 +205,6 @@ function convertToCSV(zhixiaData, shopeeData) {
             return item[field]?.replace(/[￥~]/g, "") || "";
           case "sales30Rate":
             return `${item[field]}%`;
-          case "firstCategory":
-            return firstCategory;
-          case "keyword":
-            return keyword;
-          case "siteName":
-            return getSiteNameByHost(location.host);
           case "product_url":
             return item.product_url || item.itemName;
           default:
@@ -343,9 +362,16 @@ function shopeeGetList(resultData) {
   if (list.length == 0) {
     return;
   }
+  // 获取当前页面上的关键词
+  const keyword =
+    document.querySelector(".shopee-searchbar-input input")?.value || "";
+
+  const siteName = getSiteInfoByHost(location.host).siteName;
+  const imgBase = getSiteInfoByHost(location.host).imgBase;
+
   const data = list.map((item) => {
     const { item_basic, item_data, item_card_displayed_asset } = item;
-    // 直接搜索
+    // 搜索
     if (item_basic) {
       const {
         sold,
@@ -355,6 +381,7 @@ function shopeeGetList(resultData) {
         price,
         ctime,
         name,
+        image
       } = item_basic;
 
       const product_url = getProductUrl({
@@ -364,14 +391,18 @@ function shopeeGetList(resultData) {
       });
 
       return {
-        sold,
-        historical_sold,
-        shop_location,
+        shopeeSold: sold,
+        shopeeHistoricalSold: historical_sold,
+        shopeeLocation: shop_location,
         itemid,
         price: price / 100000,
         itemName: name,
         ctime: getChinaDate(ctime * 1000),
-        product_url
+        keyword,
+        type: "搜索",
+        product_url,
+        img: `${imgBase}/${image}`,
+        siteName,
       };
     }
     // 推荐-最热销
@@ -385,14 +416,18 @@ function shopeeGetList(resultData) {
       });
 
       return {
-        sold: "-",
-        historical_sold: "-",
-        shop_location: item_card_displayed_asset.shop_location,
+        shopeeSold: "-",
+        shopeeHistoricalSold: "-",
+        shopeeLocation: item_card_displayed_asset.shop_location,
         itemid,
         price: item_card_display_price.price / 100000,
         itemName: item_card_displayed_asset.name,
         ctime: getChinaDate(ctime * 1000),
-        product_url
+        keyword,
+        type: "推荐-最热销",
+        product_url,
+        img: `${imgBase}/${item_card_displayed_asset.image}`,
+        siteName,
       };
     }
   });
@@ -428,6 +463,7 @@ function shopeeGetHdList(resultData) {
       itemid,
       price,
       product_url,
+      type: "推荐-综合排名",
     };
   });
   storeShopeeData(data);
