@@ -2,6 +2,53 @@
 const zhixiaStorageKey = `zhixia_${getChinaDate()}`;
 const shopeeStorageKey = `shopee_${getChinaDate()}`;
 
+const siteConfig = {
+  TW: {
+    siteName: "台湾",
+    host: "xiapi.xiapibuy.com",
+  },
+  MALAYSIA: {
+    siteName: "马来西亚",
+    host: "my.xiapibuy.com",
+  },
+  SINGAPORE: {
+    siteName: "新加坡",
+    host: "sg.xiapibuy.com",
+  },
+  PH: {
+    siteName: "菲律宾",
+    host: "ph.xiapibuy.com",
+  },
+  VN: {
+    siteName: "越南",
+    host: "vn.xiapibuy.com",
+  },
+  TH: {
+    siteName: "泰国",
+    host: "th.xiapibuy.com",
+  }
+};
+
+
+// 根据网页 host 获取站点名称 
+function getSiteNameByHost(host) {
+  const site = Object.values(siteConfig).find((s) => host === s.host);
+  return site ? site.siteName : "未知";
+}
+
+// 根据获取商品链接
+function getProductUrl({
+  itemId,
+  shopId,
+  itemName
+}) {
+  if (!itemId || !shopId || !itemName) {
+    return undefined;
+  }
+
+  return `https://${location.host}/${itemName}-i.${shopId}.${itemId}`
+}
+
 // content.js 接收popup操作消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FROM_POPUP") {
@@ -95,6 +142,12 @@ window.addEventListener(
 
 // 将数组转换为 CSV 格式
 function convertToCSV(zhixiaData, shopeeData) {
+
+  const firstCategory = document.querySelector(".shopee-category-list .shopee-category-list__main-category__link")?.innerText || '';
+  const secondCategory = document.querySelector(".shopee-category-list .shopee-category-list__sub-category--active")?.innerText || '';
+  const keyword = document.querySelector('.shopee-searchbar-input input')?.value || '';
+
+
   const shopeeDataMap = shopeeData.reduce((acc, item) => {
     acc[item.itemid] = {
       shopeeSold: item.sold,
@@ -103,6 +156,7 @@ function convertToCSV(zhixiaData, shopeeData) {
       itemName: item.itemName,
       realPrice: item.price,
       createTime: item.ctime,
+      product_url: item.product_url,
     };
     return acc;
   }, {});
@@ -118,7 +172,7 @@ function convertToCSV(zhixiaData, shopeeData) {
   const fieldMapping = [
     ["imgUrl", "图片"],
     ["itemId", "商品ID"],
-    ["itemName", "商品名称"],
+    ["product_url", "商品链接/名称"],
     ["catName", "类目路径"],
     ["createTime", "上架时间"],
     ["sold", "总销量"],
@@ -135,6 +189,10 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["likeCount", "点赞数"],
     ["ratingNum", "评论数"],
     ["ratingStar", "商品评分"],
+    ["firstCategory", "一级类目"],
+    ["keyword", "关键词"],
+    ["siteName", "站点"],
+    ["secondCategory", "二级类目"],
   ];
   const headers = fieldMapping.map((f) => f[1]);
   // 创建 CSV 内容
@@ -147,6 +205,14 @@ function convertToCSV(zhixiaData, shopeeData) {
             return item[field]?.replace(/[￥~]/g, "") || "";
           case "sales30Rate":
             return `${item[field]}%`;
+          case "firstCategory":
+            return firstCategory;
+          case "keyword":
+            return keyword;
+          case "siteName":
+            return getSiteNameByHost(location.host);
+          case "product_url":
+            return item.product_url || item.itemName;
           default:
             return item[field] ?? "";
         }
@@ -315,6 +381,13 @@ function shopeeGetList(resultData) {
         ctime,
         name,
       } = item_basic;
+
+      const product_url = getProductUrl({
+        itemId: itemid,
+        shopId: item_basic?.shopid,
+        itemName: item_card_displayed_asset?.name,
+      });
+
       return {
         sold,
         historical_sold,
@@ -323,11 +396,19 @@ function shopeeGetList(resultData) {
         price: price / 100000,
         itemName: name,
         ctime: getChinaDate(ctime * 1000),
+        product_url
       };
     }
     // 推荐-最热销
     if (item_data) {
       const { itemid, item_card_display_price, ctime } = item_data;
+
+      const product_url = getProductUrl({
+        itemId: itemid,
+        shopId: item_data?.shopid,
+        itemName: item_card_displayed_asset?.name,
+      });
+
       return {
         sold: "-",
         historical_sold: "-",
@@ -336,6 +417,7 @@ function shopeeGetList(resultData) {
         price: item_card_display_price.price / 100000,
         itemName: item_card_displayed_asset.name,
         ctime: getChinaDate(ctime * 1000),
+        product_url
       };
     }
   });
@@ -348,20 +430,29 @@ function shopeeGetHdList(resultData) {
   if (list.length == 0) {
     return;
   }
+  
   const data = list.map(({ item }) => {
-    const { item_data } = item;
+    
+    const { item_data, item_card_displayed_asset } = item;
     const sold = item_data.item_card_display_sold_count.monthly_sold_count;
     const historical_sold =
       item_data.item_card_display_sold_count.historical_sold_count;
     const shop_location = item_data.shop_data.shop_location;
     const itemid = item_data.item_card_display_price.item_id;
     const price = item_data.item_card_display_price.price;
+    const product_url = getProductUrl({
+      itemId: itemid,
+      shopId: item_data?.shopid,
+      itemName: item_card_displayed_asset?.name,
+    });
+    
     return {
       sold,
       historical_sold,
       shop_location,
       itemid,
       price,
+      product_url,
     };
   });
   storeShopeeData(data);
