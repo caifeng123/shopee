@@ -172,7 +172,7 @@ function convertToCSV(zhixiaData, shopeeData) {
   const fieldMapping = [
     ["imgUrl", "图片"],
     ["itemId", "商品ID"],
-    ["itemName", "商品名称"],
+    ["product_url", "商品链接"],
     ["catName", "类目路径"],
     ["createTime", "上架时间"],
     ["sold", "总销量"],
@@ -190,10 +190,9 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["ratingNum", "评论数"],
     ["ratingStar", "商品评分"],
     ["firstCategory", "一级类目"],
-    ["secondCategory", "二级类目"],
     ["keyword", "关键词"],
     ["siteName", "站点"],
-    ["product_url", "商品链接"]
+    ["secondCategory", "二级类目"],
   ];
   const headers = fieldMapping.map((f) => f[1]);
   // 创建 CSV 内容
@@ -380,6 +379,13 @@ function shopeeGetList(resultData) {
         ctime,
         name,
       } = item_basic;
+
+      const product_url = getProductUrl({
+        itemId: itemid,
+        shopId: item_basic?.shopid,
+        itemName: item_card_displayed_asset?.name,
+      });
+
       return {
         sold,
         historical_sold,
@@ -388,11 +394,19 @@ function shopeeGetList(resultData) {
         price: price / 100000,
         itemName: name,
         ctime: getChinaDate(ctime * 1000),
+        product_url
       };
     }
     // 推荐-最热销
     if (item_data) {
       const { itemid, item_card_display_price, ctime } = item_data;
+
+      const product_url = getProductUrl({
+        itemId: itemid,
+        shopId: item_data?.shopid,
+        itemName: item_card_displayed_asset?.name,
+      });
+
       return {
         sold: "-",
         historical_sold: "-",
@@ -401,6 +415,7 @@ function shopeeGetList(resultData) {
         price: item_card_display_price.price / 100000,
         itemName: item_card_displayed_asset.name,
         ctime: getChinaDate(ctime * 1000),
+        product_url
       };
     }
   });
