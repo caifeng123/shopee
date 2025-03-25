@@ -172,7 +172,7 @@ function convertToCSV(zhixiaData, shopeeData) {
   const fieldMapping = [
     ["imgUrl", "图片"],
     ["itemId", "商品ID"],
-    ["product_url", "商品链接"],
+    ["product_url", "商品链接/名称"],
     ["catName", "类目路径"],
     ["createTime", "上架时间"],
     ["sold", "总销量"],
@@ -211,6 +211,8 @@ function convertToCSV(zhixiaData, shopeeData) {
             return keyword;
           case "siteName":
             return getSiteNameByHost(location.host);
+          case "product_url":
+            return item.product_url || item.itemName;
           default:
             return item[field] ?? "";
         }
