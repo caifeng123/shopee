@@ -46,7 +46,7 @@ function getProductUrl({
     return undefined;
   }
 
-  return `https://${location.href}/${itemName}-i.${shopId}.${itemId}`
+  return `https://${location.host}/${itemName}-i.${shopId}.${itemId}`
 }
 
 // content.js 接收popup操作消息
@@ -190,8 +190,10 @@ function convertToCSV(zhixiaData, shopeeData) {
     ["ratingNum", "评论数"],
     ["ratingStar", "商品评分"],
     ["firstCategory", "一级类目"],
+    ["secondCategory", "二级类目"],
     ["keyword", "关键词"],
     ["siteName", "站点"],
+    ["product_url", "商品链接"]
   ];
   const headers = fieldMapping.map((f) => f[1]);
   // 创建 CSV 内容
