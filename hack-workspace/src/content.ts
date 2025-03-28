@@ -83,8 +83,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     }
     if (request.payload.action === "clear") {
-      localStorage.removeItem(zhixiaStorageKey);
-      localStorage.removeItem(shopeeStorageKey);
+      // 清空所有zhixia_和shopee_开头的存储
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('zhixia_') || key.startsWith('shopee_')) {
+          localStorage.removeItem(key);
+        }
+      });
       zhixiaDataLength = 0;
       shopeeDataLength = 0;
     }
