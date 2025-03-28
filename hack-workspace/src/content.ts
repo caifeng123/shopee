@@ -391,7 +391,7 @@ function shopeeGetList(resultData) {
       const product_url = getProductUrl({
         itemId: itemid,
         shopId: item_basic?.shopid,
-        itemName: item_card_displayed_asset?.name,
+        itemName: name
       });
 
       return {
