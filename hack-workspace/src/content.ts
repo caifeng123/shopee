@@ -242,6 +242,10 @@ function getChinaDate(time = Date.now()) {
 function shopeeHandler(url, resultData) {
   let rules = [
     {
+      rule: /^.*\/api\/v[0-9].*?\/shop\/rcmd_items/,
+      handler: shopeeGetShopRcmdList,
+    },
+    {
       rule: /^.*\/api\/v[0-9].*?\/search\/search_items/,
       handler: shopeeGetList,
     },
@@ -473,6 +477,11 @@ function shopeeGetHdList(resultData) {
   storeShopeeData(data);
 }
 
+// 获取店铺推荐数据
+function shopeeGetShopRcmdList(resultData) {
+  monitorAndAddInfo(resultData.data.data.items)
+}
+
 function storeShopeeData(newData) {
   const storedData = localStorage.getItem(shopeeStorageKey);
   let parsedData = [];
@@ -491,4 +500,60 @@ function storeShopeeData(newData) {
       value: parsedData.length,
     },
   });
+}
+
+// 定义定时器监听函数
+function monitorAndAddInfo(dataList) {
+  if (!dataList || dataList.length === 0) {
+      return;
+  }
+  const interval = 500;
+  const maxItems = 60;
+  let processedItems = new Set();
+
+  const timer = setInterval(() => {
+      const itemCards = document.querySelectorAll('.shop-search-result-view__item');
+
+      itemCards.forEach((itemCard, index) => {
+        // 修复1：添加数据存在性检查
+        const cardData = dataList[index]; // 修复变量声明
+        if (!cardData) return; // 防止数据越界
+
+        if (processedItems.has(itemCard)) return;
+
+        const locationContainer = itemCard.querySelector('.tranPrice');
+
+        if (locationContainer) {
+            const {ctime, sold, historical_sold, liked_count} = cardData; // 原始属性名
+            const ctimeDate = new Date(ctime * 1000).toLocaleDateString();
+            const isNew = ctimeDate.startsWith('2025');
+
+            const additionalInfoContainer = document.createElement('div');
+            additionalInfoContainer.style.marginTop = '5px'; // 添加一些间距
+            additionalInfoContainer.style.color = isNew?'red':'#757575'; // 设置文字颜色
+            additionalInfoContainer.style.fontSize = '12px'; // 设置文字大小
+            additionalInfoContainer.classList.add('additional-info'); // 添加一个标识类，方便调试
+            if (isNew) {
+                additionalInfoContainer.style.fontWeight = 'bold'; // 设置为粗体
+                additionalInfoContainer.style.border = '1px solid red'; // 添加边框
+            }
+
+            additionalInfoContainer.innerHTML = `
+                <div>创建时间: ${ctimeDate}</div>
+                <div>最近销量: ${sold}</div>
+                <div>历史销量: ${historical_sold}</div> <!-- 修正属性名 -->
+                <div>喜欢数: ${liked_count}</div>      <!-- 修正属性名 -->
+            `;
+
+            locationContainer.parentNode.appendChild(additionalInfoContainer);
+            processedItems.add(itemCard);
+        }
+      });
+
+      // 修复3：改为根据已处理数量判断
+      if (processedItems.size >= maxItems) {
+          clearInterval(timer);
+          console.log('已处理商品卡数量:', processedItems.size);
+      }
+  }, interval);
 }
