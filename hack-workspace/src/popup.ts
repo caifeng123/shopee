@@ -5,13 +5,19 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("app").insertAdjacentHTML(
     "beforebegin",
     `
-  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center;">
-    <button id=clear>清空</button>
-    <div style="text-align: center;">
-      <div>知虾记录<span id=zhixiaCount>0</span>条</div>
-      <div>shopee记录<span id=shopeeCount>0</span>条</div>
+  <div style="display: grid; place-items: center;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center;width: 100%;">
+      <button id="clear">清空</button>
+      <div style="text-align: center;">
+        <div>知虾记录<span id="zhixiaCount">0</span>条</div>
+        <div>shopee记录<span id="shopeeCount">0</span>条</div>
+      </div>
+      <button id="download_search">下载</button>
     </div>
-    <button id=download>下载</button>
+    <div>-----------------------------------------------</div>
+    <div>
+      <button id="script">start</button>
+    </div>
   </div>
 `
   );
@@ -20,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearButton = document.getElementById("clear");
   const zhixiaCountSpan = document.getElementById("zhixiaCount");
   const shopeeCountSpan = document.getElementById("shopeeCount");
-  const downloadButton = document.getElementById("download");
+  const downloadSearchButton = document.getElementById("download_search");
+  const scriptButton = document.getElementById("script");
 
   // 知虾数据实时更新监听
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -41,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
         type: "FROM_POPUP",
         payload: {
           action: "get_count",
+          classes: "search_download"
         },
       },
       (response) => {
@@ -60,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
           type: "FROM_POPUP",
           payload: {
             action: "clear",
+            classes: "search_download"
           },
         },
         (response) => {
@@ -72,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 下载按钮点击事件
-  downloadButton.addEventListener("click", () => {
+  downloadSearchButton.addEventListener("click", () => {
     // popup.js 发送消息到 content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.tabs.sendMessage(
@@ -81,12 +90,33 @@ document.addEventListener("DOMContentLoaded", () => {
           type: "FROM_POPUP",
           payload: {
             action: "download_csv",
+            classes: "search_download"
           },
         },
         (response) => {
           // 更新计数显示
           zhixiaCountSpan.textContent = response.payload.zhixiaDataLength;
           shopeeCountSpan.textContent = response.payload.shopeeDataLength;
+        }
+      );
+    });
+  });
+
+  // 脚本按钮点击事件
+  scriptButton.addEventListener("click", () => {
+    // popup.js 发送消息到 content script
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.sendMessage(
+        tabs[0].id,
+        {
+          type: "FROM_POPUP",
+          payload: {
+            action: scriptButton.textContent,
+            classes: "sale_script"
+          },
+        },
+        (response) => {
+          scriptButton.textContent = scriptButton.textContent === "start" ? "stop" : "start";
         }
       );
     });

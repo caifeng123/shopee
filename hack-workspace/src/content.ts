@@ -1,5 +1,6 @@
 // @ts-nocheck 迁移，后续再打开
-// 获取当天的存储键名
+import {shopeeJumpShop, openNextDetail, shopeeGetSoldInfo} from './content/detail'
+import {downloadCSV} from './content/utils'
 // 获取当天的存储键名
 const zhixiaStorageKey = `zhixia_${getChinaDate()}`;
 const shopeeStorageKey = `shopee_${getChinaDate()}`;
@@ -54,67 +55,68 @@ function getProductUrl({ itemId, shopId, itemName }) {
 // content.js 接收popup操作消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FROM_POPUP") {
-    let zhixiaDataLength = 0;
-    let shopeeDataLength = 0;
-    if (request.payload.action === "download_csv") {
-      const zhixiaData = localStorage.getItem(zhixiaStorageKey) || "[]";
-      const shopeeData = localStorage.getItem(shopeeStorageKey) || "[]";
-
-      const parsedZhixiaData = JSON.parse(zhixiaData) || [];
-      const parsedShopeeData = JSON.parse(shopeeData) || [];
-
-      if (parsedZhixiaData.length > 0 || parsedShopeeData.length > 0) {
-        // 将数据转换为 CSV 格式
-        const csvContent = convertToCSV(parsedZhixiaData, parsedShopeeData);
-        // 创建下载链接
-        const blob = new Blob(["\uFEFF" + csvContent], {
-          type: "text/csv;charset=utf-8;",
+    // 搜索+批量下载数据信息
+    if (request.payload.classes === "search_download") {
+      let zhixiaDataLength = 0;
+      let shopeeDataLength = 0;
+      if (request.payload.action === "download_csv") {
+        const zhixiaData = localStorage.getItem(zhixiaStorageKey) || "[]";
+        const shopeeData = localStorage.getItem(shopeeStorageKey) || "[]";
+  
+        const parsedZhixiaData = JSON.parse(zhixiaData) || [];
+        const parsedShopeeData = JSON.parse(shopeeData) || [];
+  
+        if (parsedZhixiaData.length > 0 || parsedShopeeData.length > 0) {
+          // 将数据转换为 CSV 格式
+          const csvContent = convertToCSV(parsedZhixiaData, parsedShopeeData);
+          downloadCSV(csvContent, shopeeStorageKey);
+        }
+      }
+      if (request.payload.action === "clear") {
+        // 清空所有zhixia_和shopee_开头的存储
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('zhixia_') || key.startsWith('shopee_')) {
+            localStorage.removeItem(key);
+          }
         });
-        const link = document.createElement("a");
-        if (link.download !== undefined) {
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", `${shopeeStorageKey}.csv`);
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      }
-    }
-    if (request.payload.action === "clear") {
-      // 清空所有zhixia_和shopee_开头的存储
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('zhixia_') || key.startsWith('shopee_')) {
-          localStorage.removeItem(key);
-        }
-      });
-      zhixiaDataLength = 0;
-      shopeeDataLength = 0;
-    }
-    if (request.payload.action === "get_count") {
-      const zhixiaData = localStorage.getItem(zhixiaStorageKey);
-      if (zhixiaData) {
-        const parsedData = JSON.parse(zhixiaData) || [];
-        zhixiaDataLength = parsedData.length;
-      } else {
         zhixiaDataLength = 0;
-      }
-      const shopeeData = localStorage.getItem(shopeeStorageKey);
-      if (shopeeData) {
-        const parsedData = JSON.parse(shopeeData) || [];
-        shopeeDataLength = parsedData.length;
-      } else {
         shopeeDataLength = 0;
       }
+      if (request.payload.action === "get_count") {
+        const zhixiaData = localStorage.getItem(zhixiaStorageKey);
+        if (zhixiaData) {
+          const parsedData = JSON.parse(zhixiaData) || [];
+          zhixiaDataLength = parsedData.length;
+        } else {
+          zhixiaDataLength = 0;
+        }
+        const shopeeData = localStorage.getItem(shopeeStorageKey);
+        if (shopeeData) {
+          const parsedData = JSON.parse(shopeeData) || [];
+          shopeeDataLength = parsedData.length;
+        } else {
+          shopeeDataLength = 0;
+        }
+      }
+      sendResponse({
+        type: "FROM_CONTENT",
+        payload: {
+          zhixiaDataLength,
+          shopeeDataLength,
+        },
+      });
     }
-    sendResponse({
-      type: "FROM_CONTENT",
-      payload: {
-        zhixiaDataLength,
-        shopeeDataLength,
-      },
-    });
+    // 销量脚本
+    if (request.payload.classes === "sale_script") {
+      if (request.payload.action === "start") {
+        // 开始执行脚本
+        openNextDetail();
+      }
+      if (request.payload.action === "stop") {
+        // 停止执行脚本
+      }
+      
+    }
   }
   return true; // 保持长连接
 });
@@ -241,6 +243,14 @@ function getChinaDate(time = Date.now()) {
  */
 function shopeeHandler(url, resultData) {
   let rules = [
+    {
+      rule: /^.*\/api\/v[0-9].*?\/shop\/rcmd_items/,
+      handler: shopeeGetSoldInfo,
+    },
+    {
+      rule: /^.*\/api\/v[0-9].*?\/pdp\/get_pc/,
+      handler: shopeeJumpShop,
+    },
     {
       rule: /^.*\/api\/v[0-9].*?\/shop\/rcmd_items/,
       handler: shopeeGetShopRcmdList,
