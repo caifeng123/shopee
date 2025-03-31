@@ -31,11 +31,22 @@ export const openNextDetail = () => {
 // - 劫持/api/v4/pdp/get_pc请求，获取店铺名称data.shop_detailed.account.username
 // - 替换location.pathname = /${shop_name}会保留query信息进行跳转到店铺页
 export const shopeeJumpShop = (resultData: any) => {
+  if(!resultData.data.data) {
+    handleScriptPageError()
+    return
+  }
   const shop_name = resultData.data.data.shop_detailed.account.username;
   if (!shop_name) {
     return;
   }
   location.pathname = `/${shop_name}`;
+}
+
+export const shopeeGetShopBaseError = (resultData: any) => {
+  if(resultData.data.error === 1000000){
+    handleScriptPageError()
+    return
+  }
 }
 
 // 店铺页记录销量
@@ -67,7 +78,52 @@ export const shopeeGetSoldInfo = (resultData: any) => {
     }
   })
   localStorage.setItem("detail_product_list", JSON.stringify(detailProductList))
+  // 打开下一个商品，并关闭上一个标签页
+  openNextDetail()
+  window.close()
+}
 
+// 检查是否链接有异常
+export const checkShopeePageNotFound = () => {
+  // 1. 检查链接params出错
+  const list = window.location.href.split('?')
+  if(list.length > 2){
+    handleScriptPageError()
+  }
+  // 2. 检查链接hash出错
+  if(window.location.hash?.includes('item_id=')){
+    handleScriptPageError()
+  }
+
+  // 3. 检查请求页面异常问题
+  fetch(location.href)
+  .then(response => {
+    if (response.status !== 200) {
+      handleScriptPageError()
+    }
+  })
+  .catch(error => {
+    console.error("Fetch failed:", error);
+  });
+}
+
+// 处理脚本页面异常
+export const handleScriptPageError = () => {
+  const match = window.location.href.match(/item_id=(\d+)/);
+  if(match === null || !match[1]){
+    return
+  }
+  const item_id = match[1]
+  const detailProductList = JSON.parse(
+    localStorage.getItem("detail_product_list") || "[]"
+  );
+  detailProductList.forEach((product: any) => {
+    if (product.item_id === item_id) {
+      product.sold = -2
+      product.historical_sold = -2
+    }
+  })
+  localStorage.setItem("detail_product_list", JSON.stringify(detailProductList))
   // 打开下一个商品，并关闭上一个标签页
   openNextDetail()
   window.close()

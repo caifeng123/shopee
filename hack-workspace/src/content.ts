@@ -1,9 +1,11 @@
 // @ts-nocheck 迁移，后续再打开
-import {shopeeJumpShop, openNextDetail, shopeeGetSoldInfo} from './content/detail'
+import {shopeeJumpShop, openNextDetail, shopeeGetSoldInfo, checkShopeePageNotFound, handleScriptPageError,shopeeGetShopBaseError} from './content/detail'
 import {downloadCSV} from './content/utils'
 // 获取当天的存储键名
 const zhixiaStorageKey = `zhixia_${getChinaDate()}`;
 const shopeeStorageKey = `shopee_${getChinaDate()}`;
+
+checkShopeePageNotFound()
 
 const SiteConfig = {
   TW: {
@@ -131,7 +133,6 @@ window.addEventListener(
       const eventData = JSON.parse(event.data);
 
       if (eventData.code === "REQUEST_CODE") {
-        // 处理接收到的数据
         if (
           eventData.data &&
           eventData.data.request &&
@@ -139,7 +140,10 @@ window.addEventListener(
         ) {
           shopeeHandler(eventData.data.request[0], eventData);
         }
-        // 这里可以添加你处理数据的逻辑
+        // 处理404页面
+        if(Object.keys(eventData.data).some(key => key.includes('404'))){
+          handleScriptPageError()
+        }
       }
     } catch (error) {
       console.error("Error parsing message data:", event.data);
@@ -243,6 +247,10 @@ function getChinaDate(time = Date.now()) {
  */
 function shopeeHandler(url, resultData) {
   let rules = [
+    {
+      rule: /^.*\/api\/v[0-9].*?\/shop\/get_shop_base/,
+      handler: shopeeGetShopBaseError,
+    },
     {
       rule: /^.*\/api\/v[0-9].*?\/shop\/rcmd_items/,
       handler: shopeeGetSoldInfo,

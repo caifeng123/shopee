@@ -20,12 +20,13 @@ function csvToJson(csv: string) {
   const result = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(",").map(value => value.trim());
+    // 使用正则表达式匹配 CSV 行，支持引号包裹的字段或未包裹的字段
+    const values = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(value => value.replace(/^"|"$/g, "").trim()) || [];
     const obj = {} as Record<string, string>;
 
     // 动态生成键值对，仅处理非空的表头字段
     headers.forEach((header, index) => {
-      obj[header] = (values[index] || "").replace(/\"/g, ""); // 如果值为空，设置为 ""
+      obj[header] = values[index] || ""; // 如果值为空，设置为 ""
     });
 
     result.push(obj);
@@ -36,8 +37,18 @@ function csvToJson(csv: string) {
 
 
 function main(){
-  const jsonData = csvToJson(readFileSync(resolve(__dirname,"test.csv"), "utf-8"));
-  writeFileSync(resolve(__dirname,"test.json"), JSON.stringify(jsonData, null, 2));
+  const countries = [
+    'tw',
+    'th',
+    'vn',
+    'sg',
+    'my',
+    'ph',
+  ]
+  countries.forEach(country => {
+    const jsonData = csvToJson(readFileSync(resolve(__dirname,'csv',`${country}.csv`), "utf-8"));
+    writeFileSync(resolve(__dirname,'json',`${country}.json`), JSON.stringify(jsonData, null, 2));
+  })
 }
 
 main()
