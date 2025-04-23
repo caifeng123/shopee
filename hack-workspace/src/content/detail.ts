@@ -39,7 +39,14 @@ export const shopeeJumpShop = (resultData: any) => {
   if (!shop_name) {
     return;
   }
-  location.pathname = `/${shop_name}`;
+
+  const url = new URL(window.location.href);
+  const page = url.searchParams.get('page')
+  if(!page){
+    url.searchParams.set('sortBy', 'pop')
+  }
+  url.pathname = `/${shop_name}`;
+  window.location.href = url.href
 }
 
 export const shopeeGetShopBaseError = (resultData: any) => {
@@ -60,28 +67,63 @@ export const shopeeGetSoldInfo = (resultData: any) => {
   if (!item_id) {
     return
   }
+  // 到最后一页了也没找到则标记-1并结束
+  if(!items?.length) {
+    return writeLocalStorage({
+      sold: -1,
+      historical_sold: -1,
+      itemid: item_id,
+    })
+  }
+  // 在当前页数据中查找商品
   const item = items.find(({itemid}: {itemid: string}) => itemid == item_id)
+  if(!item){
+    return goSearchNextPage()
+  }
+  writeLocalStorage(item)
+}
 
+// 进入下一页查询
+const goSearchNextPage = () => {
+  const url = new URL(window.location.href);
+
+  // 转换为对象
+  const searchParams: Record<string, string> = {};
+  url.searchParams.forEach((value, key) => {
+    searchParams[key] = value;
+  });
+
+  if(searchParams.page == '10') {
+    return writeLocalStorage({
+      sold: -1,
+      historical_sold: -1,
+      itemid: searchParams.item_id,
+    })
+  }
+
+  if(searchParams.sortBy && searchParams.item_id){
+    url.searchParams.set('page', `${+(searchParams.page || 0) + 1}`)
+  }
+  window.location.href = url.href
+}
+
+// 写入localstorage, 并打开下一个商品
+export const writeLocalStorage = (item: any) => {
   const detailProductList = JSON.parse(
     localStorage.getItem("detail_product_list") || "[]"
   );
   detailProductList.forEach((product: any) => {
-    if (product.item_id === item_id) {
-      if(item){
-        const {sold, historical_sold} = item
-        product.sold = sold
-        product.historical_sold = historical_sold
-      }else{
-        product.sold = -1
-        product.historical_sold = -1
-      }
+    if (product.item_id == item.itemid) {
+      const {sold, historical_sold} = item
+      product.sold = sold
+      product.historical_sold = historical_sold
     }
   })
   localStorage.setItem("detail_product_list", JSON.stringify(detailProductList))
   // 打开下一个商品，并关闭上一个标签页
   openNextDetail()
   window.close()
-}
+};
 
 // 检查是否链接有异常
 export const checkShopeePageNotFound = () => {
@@ -114,17 +156,10 @@ export const handleScriptPageError = () => {
     return
   }
   const item_id = match[1]
-  const detailProductList = JSON.parse(
-    localStorage.getItem("detail_product_list") || "[]"
-  );
-  detailProductList.forEach((product: any) => {
-    if (product.item_id === item_id) {
-      product.sold = -2
-      product.historical_sold = -2
-    }
+
+  writeLocalStorage({
+    itemid: item_id,
+    sold: -2,
+    historical_sold: -2
   })
-  localStorage.setItem("detail_product_list", JSON.stringify(detailProductList))
-  // 打开下一个商品，并关闭上一个标签页
-  openNextDetail()
-  window.close()
 }
